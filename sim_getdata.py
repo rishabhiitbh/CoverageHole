@@ -2,9 +2,12 @@ import random
 from math import sqrt,floor,atan2,sin,cos,degrees,radians
 import numpy as np
 import time
-canvasX=100
-canvasY=100
-radius=6  
+sthn=input().split(' ')#size times and holesize
+canvas_size,times,holesize,sensor_count=int(sthn[0]),int(sthn[1]),int(sthn[2]),int(sthn[3])
+canvas=int()
+canvasX=canvas_size
+canvasY=canvas_size
+radius=10  
 msensors=[]
 intersections=[]
 boundrySensors=[]
@@ -44,6 +47,13 @@ def ScatterSensors(sensors):
                     uncovered_boxes.remove((x+i,y+j)) 
 
         sensors.append(Sensor(pos[0],radius))
+    ct=len(sensors)
+    if ct > sensor_count:
+        print("insufficien sensors "+ct.__str__())
+    while ct < sensor_count:
+        pos=random.randint(0,canvasX),random.randint(0,canvasX)
+        ct=ct+1
+        sensors.append(Sensor(pos,radius))
 
 
 def GetIntersections(sensors):
@@ -338,27 +348,33 @@ def getnewcentre(sc,spr,sn,sensors):
 
 def shrinkHole(sensors):
     l=len(boundrySensors)
+    dist=0
+    caldist= lambda a,b,c,d:sqrt((a-c)**2+(a-c)**2)
     if l%2 == 1:
         for i in range(1,len(boundrySensors),2):
             tmp=(getnewcentre(i,i-1,(i+1)%l,sensors))
+            dist=dist+caldist(sensors[boundrySensors[i]].x,sensors[boundrySensors[i]].y,tmp[0],tmp[1])
             sensors[boundrySensors[i]].x=tmp[0]
-            sensors[boundrySensors[i]].y=tmp[1] 
+            sensors[boundrySensors[i]].y=tmp[1]           
             getHoleBoundary(sensors)
             getBoundryArc(sensors)
             getMaskedIntersections(sensors)
         for i in range(2,len(boundrySensors),2):
             tmp=(getnewcentre(i,i-1,(i+1)%l,sensors))
+            dist=dist+caldist(sensors[boundrySensors[i]].x,sensors[boundrySensors[i]].y,tmp[0],tmp[1])
             sensors[boundrySensors[i]].x=tmp[0]
             sensors[boundrySensors[i]].y=tmp[1] 
             getHoleBoundary(sensors)
             getBoundryArc(sensors)
             getMaskedIntersections(sensors)
-        c=getnewcentre(0,-1,1,sensors)       
+        c=getnewcentre(0,-1,1,sensors)   
+        dist=dist+caldist(sensors[boundrySensors[i]].x,sensors[boundrySensors[i]].y,tmp[0],tmp[1])
         sensors[boundrySensors[0]].x=c[0]
         sensors[boundrySensors[0]].y=c[1]        
     else:
         for i in range(0,len(boundrySensors),2):
             tmp=(getnewcentre(i,i-1,(i+1)%l,sensors))
+            dist=dist+caldist(sensors[boundrySensors[i]].x,sensors[boundrySensors[i]].y,tmp[0],tmp[1])
             sensors[boundrySensors[i]].x=tmp[0]
             sensors[boundrySensors[i]].y=tmp[1] 
             getHoleBoundary(sensors)
@@ -366,55 +382,60 @@ def shrinkHole(sensors):
             getMaskedIntersections(sensors)
         for i in range(1,len(boundrySensors),2):
             tmp=(getnewcentre(i,i-1,(i+1)%l,sensors))
+            dist=dist+caldist(sensors[boundrySensors[i]].x,sensors[boundrySensors[i]].y,tmp[0],tmp[1])            
             sensors[boundrySensors[i]].x=tmp[0]
             sensors[boundrySensors[i]].y=tmp[1] 
             getHoleBoundary(sensors)
             getBoundryArc(sensors)
             getMaskedIntersections(sensors)
-
+    return dist
 def shrinkOne(sensors):
         c=getnewcentre(0,-1,1,sensors)       
         sensors[boundrySensors[0]].x=c[0]
         sensors[boundrySensors[0]].y=c[1]
 
-for h in range(4,20,2):
-    i=0
-    pr=0
-    tcc=0
-    times=100
-    holesize=h
-    print("For Holesize "+holesize.__str__())
-    while i< times:
-        try:    
-            msensors.clear()
-            ScatterSensors(msensors)
-            xp=50
-            yp=50
-            tsensors=[]
-            for sensor in msensors:
-                dx=abs(sensor.x-xp)
-                dy=abs(sensor.y-yp)
-                dist=sqrt(dx**2+dy**2)
-                if dist >= sensor.r+holesize:
-                    tsensors.append(sensor)
-            msensors.clear()
-            msensors=tsensors
-            getHoleBoundary(msensors)
-            getBoundryArc(msensors)
-            ia=getHoleArea(msensors)
-            getMaskedIntersections(msensors)
-            shrinkHole(msensors)
-            for sensor in msensors:
-                sensor.clear_sensor_data()
-            getHoleBoundary(msensors)
-            getBoundryArc(msensors)
-            fa=getApproxArea(msensors)
-            pr=pr+(ia-fa)/ia*100
-            if (fa==0):
-                tcc=tcc+1
-            print(ia.__str__()+" "+fa.__str__())
-            i=i+1 
-        except:
-            continue
-    print("number of times hole fully covered "+tcc.__str__())
-    print("average area reduced = "+(pr/times).__str__())
+
+i=0
+pr=0
+tcc=0 
+tdt=0
+print("For Holesize "+holesize.__str__())
+print("Number of sensor "+sensor_count.__str__())
+while i < times:
+    try:    
+        msensors.clear()
+        ScatterSensors(msensors)
+        xp=canvasX/2
+        yp=canvasY/2
+        tsensors=[]
+        for sensor in msensors:
+            dx=abs(sensor.x-xp)
+            dy=abs(sensor.y-yp)
+            if dx >= holesize/2 or dy >= holesize/2 :
+                tsensors.append(sensor)
+        msensors.clear()
+        msensors=tsensors
+        getHoleBoundary(msensors)
+        getBoundryArc(msensors)
+        ia=getHoleArea(msensors)
+        getMaskedIntersections(msensors)
+        dt=shrinkHole(msensors)
+        tdt=dt+tdt
+        for sensor in msensors:
+            sensor.clear_sensor_data()
+        getHoleBoundary(msensors)
+        getBoundryArc(msensors)
+        fa=getApproxArea(msensors)
+        if fa > ia:
+            raise "some error must have occured"
+        pr=pr+(ia-fa)/ia*100
+        if (fa==0):
+            tcc=tcc+1
+        print(ia.__str__()+" "+fa.__str__()+" "+dt.__str__())
+        i=i+1 
+    except:
+        continue
+
+print("number of times hole fully covered "+tcc.__str__())
+print("average area reduced = "+(pr/times).__str__())
+print("average distance traveled = "+(tdt/times).__str__())
